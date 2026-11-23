@@ -14,6 +14,28 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
+let isConnected = false;
+
+async function connectDB() {
+    if (isConnected) return;
+
+    await mongoose.connect(process.env.MONGODB_URI);
+    isConnected = true;
+
+    console.log("MongoDB Connected Successfully!");
+}
+
+app.use(async (req, res, next) => {
+    try {
+        await connectDB();
+        next();
+    } catch (error) {
+        console.error("MongoDB Connection Failed:", error.message);
+        res.status(500).json({
+            message: "Database connection failed"
+        });
+    }
+});
 
 // Format employee data for the frontend
 function formatEmployee(employee) {
@@ -257,12 +279,5 @@ app.get("/api/holidays", async (req, res) => {
     }
 });
 // CONNECT TO MONGODB AND START SERVER
-mongoose.connect(process.env.MONGODB_URI)
-    .then(() => {
-        console.log("MongoDB Connected Successfully!");
-    })
-    .catch(error => {
-        console.log("MongoDB Connection Failed:", error.message);
-    });
 
 module.exports = app;
